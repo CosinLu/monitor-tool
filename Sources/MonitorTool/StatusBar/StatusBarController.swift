@@ -24,7 +24,7 @@ final class StatusBarController: NSObject, NSPopoverDelegate {
         guard let button = statusItem.button else { return }
 
         let image = NSImage(
-            systemSymbolName: "waveform.path.ecg",
+            systemSymbolName: "battery.100",
             accessibilityDescription: "System Monitor"
         )
         image?.isTemplate = true
