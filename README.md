@@ -4,15 +4,19 @@
 
 ## 功能
 
-- 菜单栏常驻图标（无 Dock 图标）
-- 点击图标展示系统状态弹窗
-- CPU 使用率与最近 60 秒趋势
-- 内存已用 / 总量 / 可用 / 压力状态
-- 电池电量、充电状态、剩余时间、系统低电量模式
-- 系统热状态与传感器温度（可选高级 SMC 温度读取）
-- 高级温度读取结果提示（未开启 / 读取成功 / 读取失败并降级）
-- 可切换刷新频率（省电 / 标准 / 实时），修改后立即生效
-- 弹窗底部一键退出
+- 菜单栏常驻图标（无 Dock 图标）。
+- 菜单栏图标为电池样式，实时跟随电量和充电状态变化：
+  - 未充电时显示 `battery.0` / `25` / `50` / `75` / `100` 档位。
+  - 充电时显示 `bolt.batteryblock.fill`。
+  - 无电池设备 fallback 到 `battery.100`。
+- 点击图标展示系统状态弹窗，点击弹窗外区域自动关闭弹窗。
+- CPU 使用率与最近 60 秒趋势。
+- 内存已用 / 总量 / 可用 / 压力状态。
+- 电池电量、充电状态、剩余时间、系统低电量模式。
+- 系统热状态与传感器温度（可选高级 SMC 温度读取）。
+- 高级温度读取结果提示（未开启 / 读取成功 / 读取失败并降级）。
+- 可切换刷新频率（省电 / 标准 / 实时），修改后立即生效。
+- 弹窗底部一键退出。
 
 ## 技术栈
 
@@ -27,14 +31,14 @@
 当前环境没有 `xcodebuild`，因此使用 Swift Package Manager 构建，并手动打包为标准 `.app` Bundle。
 
 ```bash
-# 一键发布构建并打包成 .app
+# 一键发布构建并打包成 .app（包含 AppIcon.icns）
 ./build.sh
 
 # 运行 App（推荐，无 Dock 图标）
 open build/MonitorTool.app
 ```
 
-> 注意：直接运行 `.build/debug/MonitorTool` 或 `.build/release/MonitorTool` 原始可执行文件会出现 Dock 图标，因为 `LSUIElement` 仅包含在 `MonitorTool.app/Contents/Info.plist` 中。
+> 注意：直接运行 `.build/debug/MonitorTool` 或 `.build/release/MonitorTool` 原始可执行文件会出现 Dock 图标，因为 `LSUIElement` 与 `CFBundleIconFile` 仅包含在 `MonitorTool.app/Contents/Info.plist` 中。
 
 ## 项目结构
 
@@ -54,14 +58,21 @@ Sources/MonitorTool/
 │   ├── SMCMonitor.swift
 │   └── SystemSnapshot.swift
 ├── Settings/
-│   ├── SettingsStore.swift
-│   └── LaunchAtLoginManager.swift  # 预留，第一版 UI 未启用
+│   └── SettingsStore.swift
 └── UI/
     ├── PopoverRootView.swift
     ├── DashboardView.swift
     ├── MetricSectionView.swift
     ├── TrendLineView.swift
     └── SettingsView.swift
+
+Other files:
+├── Package.swift
+├── Info.plist
+├── build.sh
+├── generate-icon.swift
+├── AppIcon.icns
+└── README.md
 ```
 
 ## 开发环境
@@ -70,6 +81,18 @@ Sources/MonitorTool/
 - Swift 版本：Apple Swift version 6.3.2 (swiftlang-6.3.2.1.108 clang-2100.1.1.101)
 - 架构：arm64-apple-macosx26.0
 - 构建工具：Swift Package Manager（无 Xcode/xcodebuild）
+
+## 菜单栏图标
+
+- 使用 `NSStatusItem.squareLength`，只显示图标，不显示文字。
+- 图标为电池样式，跟随 `BatteryStatus.percentage` 与 `isCharging` 实时更新。
+- 图标使用系统模板色，自动适配深色/浅色菜单栏。
+
+## 弹窗交互
+
+- 点击菜单栏图标：打开或关闭弹窗。
+- 点击弹窗外区域：自动关闭弹窗（通过 `NSPopover` `.transient` 行为 + 全局鼠标事件监听双重保证）。
+- 弹窗打开时采样频率提高，关闭时降低。
 
 ## 高级温度模式
 
