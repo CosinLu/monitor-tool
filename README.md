@@ -4,11 +4,7 @@
 
 ## 功能
 
-- 菜单栏常驻图标（无 Dock 图标）。
-- 菜单栏图标为电池样式，实时跟随电量和充电状态变化：
-  - 未充电时显示 `battery.0` / `25` / `50` / `75` / `100` 档位。
-  - 充电时显示 `bolt.batteryblock.fill`。
-  - 无电池设备 fallback 到 `battery.100`。
+- 菜单栏常驻图标（无 Dock 图标），使用 `waveform.path.ecg`。
 - 点击图标展示系统状态弹窗，点击弹窗外区域自动关闭弹窗。
 - CPU 使用率与最近 60 秒趋势。
 - 内存已用 / 总量 / 可用 / 压力状态。
@@ -85,7 +81,7 @@ Other files:
 ## 菜单栏图标
 
 - 使用 `NSStatusItem.squareLength`，只显示图标，不显示文字。
-- 图标为电池样式，跟随 `BatteryStatus.percentage` 与 `isCharging` 实时更新。
+- 图标为 `waveform.path.ecg`，保持恒定，不随系统状态变化。
 - 图标使用系统模板色，自动适配深色/浅色菜单栏。
 
 ## 弹窗交互

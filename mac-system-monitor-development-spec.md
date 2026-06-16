@@ -115,10 +115,7 @@ UI/
 
 当前实现：
 
-- 图标为电池样式，根据电量与充电状态动态变化：
-  - 未充电：按电量档位显示 `battery.0` / `battery.25` / `battery.50` / `battery.75` / `battery.100`。
-  - 充电中：显示 `bolt.batteryblock.fill`。
-  - 无电池设备：fallback 到 `battery.100`。
+- 图标使用 `waveform.path.ecg`，保持恒定，不随系统状态变化。
 - 图标使用系统模板色，适配深色/浅色菜单栏。
 
 图标行为：
@@ -182,50 +179,39 @@ exit(0)
 
 菜单栏图标只显示符号，不显示文字。
 
-当前实现方向：
+推荐图标方向：
 
 - 风格：系统原生、线性、轻量。
 - 尺寸：使用 `NSStatusItem.squareLength`，让系统控制菜单栏占位。
 - 颜色：默认使用系统模板色，适配深色/浅色模式。
-- 形态：电池样式，与 App 核心监控目标（电源/电池）保持一致。
+- 形态：优先选择“监控/生命体征/仪表盘”意象，不使用复杂插画。
 
 当前使用 SF Symbol：
 
 ```text
-battery.0 / battery.25 / battery.50 / battery.75 / battery.100
-bolt.batteryblock.fill
+waveform.path.ecg
 ```
 
 实现要点：
 
 ```swift
-let symbolName: String
-if battery.isCharging {
-    symbolName = "bolt.batteryblock.fill"
-} else {
-    switch battery.percentage {
-    case 0...10:  symbolName = "battery.0"
-    case 11...30: symbolName = "battery.25"
-    case 31...60: symbolName = "battery.50"
-    case 61...90: symbolName = "battery.75"
-    default:      symbolName = "battery.100"
-    }
-}
-
 let image = NSImage(
-    systemSymbolName: symbolName,
+    systemSymbolName: "waveform.path.ecg",
     accessibilityDescription: "System Monitor"
 )
+
 image?.isTemplate = true
 statusItem.button?.image = image
 ```
 
 图标状态：
 
-- 未充电：根据电量百分比显示对应电池档位。
-- 充电中：显示带闪电的电池块图标。
-- 无电池设备：显示满电电池图标作为 fallback。
-- 所有图标均使用系统模板色，不额外着色，避免菜单栏视觉干扰。
+- 正常：系统默认模板色。
+- 推荐第一版保持菜单栏图标恒定，不做状态变色：
+  - 更符合轻量工具定位。
+  - 避免菜单栏视觉干扰。
+  - 减少 UI 状态复杂度。
+  - 详细状态已经在点击后的弹窗中展示。
 
 菜单栏图标验收：
 
@@ -234,8 +220,6 @@ statusItem.button?.image = image
 - 深色/浅色模式下都清晰可见。
 - 图标点击区域稳定，不因状态变化改变宽度。
 - 弹窗打开和关闭时图标不跳动。
-- 插拔电源时，图标在普通电池与充电电池之间切换。
-- 电量跨档位变化时，图标跟随切换。
 
 ## 5. 数据模型
 
@@ -631,7 +615,7 @@ UserDefaults.standard
 - 设置 `LSUIElement = true`。
 - 配置 `CFBundleIconFile` 与 `AppIcon.icns`，为 `.app` Bundle 提供应用图标。
 - 创建 `NSStatusItem`。
-- 菜单栏显示单个图标（电池样式，可随电量/充电状态变化）。
+- 菜单栏显示单个图标（`waveform.path.ecg`，保持恒定）。
 - 点击图标显示 `NSPopover`。
 - 点击弹窗外区域自动关闭弹窗。
 - 弹窗中放一个占位 SwiftUI 页面。
@@ -688,13 +672,12 @@ UserDefaults.standard
 - 使用 `ProcessInfo.processInfo.isLowPowerModeEnabled` 读取系统低电量模式。
 - 无电池时返回 `nil`。
 - UI 展示电量、充电状态、剩余时间、电源模式和当前采样模式。
-- 菜单栏电池图标根据电量与充电状态实时更新。
 
 验收：
 
 - 电量与系统菜单栏一致。
 - 系统低电量模式开启时，App 内电源模式和电池颜色同步变为低电量状态。
-- 插拔电源后，菜单栏图标在普通电池与充电电池之间切换。
+- 插拔电源后状态变化。
 - 无电池设备不崩溃。
 
 ### 第五步：实现热状态与高级温度模式
@@ -776,7 +759,7 @@ UserDefaults.standard
 功能：
 
 - App 无 Dock 图标，`.app` Bundle 有应用图标。
-- 菜单栏只显示图标，图标为电池样式并随电量/充电状态变化。
+- 菜单栏只显示图标，图标为 `waveform.path.ecg` 并保持恒定。
 - 点击图标展示详细状态，点击弹窗外区域自动关闭。
 - 弹窗内显示 CPU、内存、电池电量、充电状态、电源模式、采样模式、热状态和高级温度状态。
 - 弹窗内有退出按钮。
@@ -829,7 +812,6 @@ UserDefaults.standard
 - SMC 读取失败是否安全降级。
 - 高级温度模式是否明确提示成功或失败。
 - 系统低电量模式和采样模式是否在 UI 中准确展示。
-- 菜单栏电池图标是否随电量/充电状态正确更新，是否使用有效 SF Symbol。
 - 点击弹窗外区域是否能稳定关闭弹窗。
 - 退出按钮是否能稳定结束进程。
 - UI 是否符合轻量菜单栏工具的目标。

@@ -1,6 +1,5 @@
 import Cocoa
 import SwiftUI
-import Combine
 
 @MainActor
 final class StatusBarController: NSObject, NSPopoverDelegate {
@@ -9,7 +8,6 @@ final class StatusBarController: NSObject, NSPopoverDelegate {
     private let settingsStore: SettingsStore
     private let sampler: MetricsSampler
     private var clickMonitor: Any?
-    private var cancellables = Set<AnyCancellable>()
 
     override init() {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
@@ -21,58 +19,20 @@ final class StatusBarController: NSObject, NSPopoverDelegate {
 
         configureStatusItem()
         configurePopover()
-        subscribeToBatteryUpdates()
     }
 
     private func configureStatusItem() {
         guard let button = statusItem.button else { return }
 
-        updateMenuBarIcon(battery: nil)
-        button.action = #selector(togglePopover)
-        button.target = self
-        button.sendAction(on: [.leftMouseUp, .rightMouseUp])
-    }
-
-    private func subscribeToBatteryUpdates() {
-        sampler.$latestSnapshot
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] snapshot in
-                self?.updateMenuBarIcon(battery: snapshot?.battery)
-            }
-            .store(in: &cancellables)
-    }
-
-    private func updateMenuBarIcon(battery: BatteryStatus?) {
-        guard let button = statusItem.button else { return }
-
-        let symbolName: String
-        if let battery = battery {
-            if battery.isCharging {
-                symbolName = "bolt.batteryblock.fill"
-            } else {
-                switch battery.percentage {
-                case 0...10:
-                    symbolName = "battery.0"
-                case 11...30:
-                    symbolName = "battery.25"
-                case 31...60:
-                    symbolName = "battery.50"
-                case 61...90:
-                    symbolName = "battery.75"
-                default:
-                    symbolName = "battery.100"
-                }
-            }
-        } else {
-            symbolName = "battery.100"
-        }
-
         let image = NSImage(
-            systemSymbolName: symbolName,
+            systemSymbolName: "waveform.path.ecg",
             accessibilityDescription: "System Monitor"
         )
         image?.isTemplate = true
         button.image = image
+        button.action = #selector(togglePopover)
+        button.target = self
+        button.sendAction(on: [.leftMouseUp, .rightMouseUp])
     }
 
     private func configurePopover() {
