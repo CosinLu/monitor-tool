@@ -47,20 +47,21 @@ final class StatusBarController: NSObject, NSPopoverDelegate {
 
         let symbolName: String
         if let battery = battery {
-            let level = battery.percentage
-            let charging = battery.isCharging
-
-            switch level {
-            case 0...10:
-                symbolName = charging ? "battery.0bolt" : "battery.0"
-            case 11...30:
-                symbolName = charging ? "battery.25bolt" : "battery.25"
-            case 31...60:
-                symbolName = charging ? "battery.50bolt" : "battery.50"
-            case 61...90:
-                symbolName = charging ? "battery.75bolt" : "battery.75"
-            default:
-                symbolName = charging ? "battery.100bolt" : "battery.100"
+            if battery.isCharging {
+                symbolName = "bolt.batteryblock.fill"
+            } else {
+                switch battery.percentage {
+                case 0...10:
+                    symbolName = "battery.0"
+                case 11...30:
+                    symbolName = "battery.25"
+                case 31...60:
+                    symbolName = "battery.50"
+                case 61...90:
+                    symbolName = "battery.75"
+                default:
+                    symbolName = "battery.100"
+                }
             }
         } else {
             symbolName = "battery.100"
