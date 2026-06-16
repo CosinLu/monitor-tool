@@ -102,7 +102,7 @@ UI/
 - App 不显示标准菜单栏应用菜单。
 - 用户主要通过右上角菜单栏图标操作 App。
 
-同时，`.app` Bundle 通过 `CFBundleIconFile` 引用 `AppIcon.icns`，使 App 在 Finder、启动台、Dock（若手动打开）等处显示电池风格应用图标。
+同时，`.app` Bundle 通过 `CFBundleIconFile` 引用 `AppIcon.icns`，使 App 在 Finder、启动台、Dock（若手动打开）等处显示监控风格应用图标（使用 `waveform.path.ecg` 生成）。
 
 ### 4.2 菜单栏入口
 

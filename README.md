@@ -34,7 +34,7 @@
 open build/MonitorTool.app
 ```
 
-> 注意：直接运行 `.build/debug/MonitorTool` 或 `.build/release/MonitorTool` 原始可执行文件会出现 Dock 图标，因为 `LSUIElement` 与 `CFBundleIconFile` 仅包含在 `MonitorTool.app/Contents/Info.plist` 中。
+> 注意：直接运行 `.build/debug/MonitorTool` 或 `.build/release/MonitorTool` 原始可执行文件会出现 Dock 图标，因为 `LSUIElement` 与 `CFBundleIconFile` 仅包含在 `MonitorTool.app/Contents/Info.plist` 中。App 图标为监控样式（`waveform.path.ecg`），打包时通过 `generate-icon.swift` 生成 `AppIcon.icns`。
 
 ## 项目结构
 

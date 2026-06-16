@@ -16,7 +16,7 @@ let sizes: [(name: String, px: Int)] = [
 let iconset = "AppIcon.iconset"
 try? FileManager.default.createDirectory(atPath: iconset, withIntermediateDirectories: true, attributes: nil)
 
-let symbolName = "battery.100"
+let symbolName = "waveform.path.ecg"
 guard let symbol = NSImage(systemSymbolName: symbolName, accessibilityDescription: nil) else {
     print("Failed to load SF Symbol: \(symbolName)")
     exit(1)
@@ -31,7 +31,7 @@ for entry in sizes {
     // Background rounded rect
     let bgRect = NSRect(origin: .zero, size: size)
     let path = NSBezierPath(roundedRect: bgRect, xRadius: size.width * 0.22, yRadius: size.height * 0.22)
-    NSColor.systemGreen.setFill()
+    NSColor.systemBlue.setFill()
     path.fill()
 
     // Draw symbol centered
