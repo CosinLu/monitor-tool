@@ -6,6 +6,7 @@ struct SystemSnapshot: Identifiable {
     let memory: MemoryStatus
     let battery: BatteryStatus?
     let thermal: ThermalStatus
+    let appResource: AppResourceStatus
     let sampledAt: Date
 }
 
@@ -52,15 +53,32 @@ struct BatteryStatus {
 
 struct ThermalStatus {
     let state: ThermalState
-    let sensorTemperatureCelsius: Double?
-    let sensorSource: String?
-    let sensorStatus: ThermalSensorStatus
+    let averageTemperatureCelsius: Double?
+    let minimumTemperatureCelsius: Double?
+    let maximumTemperatureCelsius: Double?
+    let temperatureSource: String?
+    let temperatureSensorCount: Int
+    let temperatureStatus: TemperatureStatus
+    let temperatureSampledAt: Date?
 }
 
-enum ThermalSensorStatus {
-    case disabled
+struct TemperatureReading {
+    let averageCelsius: Double
+    let minimumCelsius: Double
+    let maximumCelsius: Double
+    let source: String
+    let sensorCount: Int
+}
+
+enum TemperatureStatus {
     case available
+    case needsPermission
     case unavailable
+}
+
+struct AppResourceStatus {
+    let cpuUsagePercent: Double
+    let memoryBytes: UInt64
 }
 
 enum ThermalState: String {

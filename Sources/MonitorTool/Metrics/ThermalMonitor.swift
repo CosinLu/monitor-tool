@@ -1,30 +1,35 @@
 import Foundation
 
 final class ThermalMonitor: @unchecked Sendable {
-    private let smc = SMCMonitor()
+    private let temperatureMonitor = HIDTemperatureMonitor()
+    private let powermetricsMonitor = PowermetricsTemperatureMonitor()
 
-    func sample(advanced: Bool) -> ThermalStatus {
+    func sample() -> ThermalStatus {
         let state = thermalState(from: ProcessInfo.processInfo.thermalState)
+        let reading = temperatureMonitor.readTemperature()
+            ?? powermetricsMonitor.readTemperatureIfDue()
 
-        var sensorTemp: Double?
-        var source: String?
-        var sensorStatus: ThermalSensorStatus = .disabled
+        return status(from: state, reading: reading)
+    }
 
-        if advanced {
-            if let temp = smc.readTemperature() {
-                sensorTemp = temp
-                source = "SMC"
-                sensorStatus = .available
-            } else {
-                sensorStatus = .unavailable
-            }
-        }
+    func sampleWithAuthorization() -> ThermalStatus {
+        let state = thermalState(from: ProcessInfo.processInfo.thermalState)
+        let reading = temperatureMonitor.readTemperature()
+            ?? powermetricsMonitor.readTemperatureWithAuthorization()
 
+        return status(from: state, reading: reading)
+    }
+
+    private func status(from state: ThermalState, reading: TemperatureReading?) -> ThermalStatus {
         return ThermalStatus(
             state: state,
-            sensorTemperatureCelsius: sensorTemp,
-            sensorSource: source,
-            sensorStatus: sensorStatus
+            averageTemperatureCelsius: reading?.averageCelsius,
+            minimumTemperatureCelsius: reading?.minimumCelsius,
+            maximumTemperatureCelsius: reading?.maximumCelsius,
+            temperatureSource: reading?.source,
+            temperatureSensorCount: reading?.sensorCount ?? 0,
+            temperatureStatus: reading == nil ? .needsPermission : .available,
+            temperatureSampledAt: reading == nil ? nil : Date()
         )
     }
 

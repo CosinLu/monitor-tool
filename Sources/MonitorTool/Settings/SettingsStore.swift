@@ -36,7 +36,6 @@ enum RefreshRate: String, CaseIterable, Identifiable {
 final class SettingsStore: ObservableObject {
     private enum Keys {
         static let refreshRate = "refreshRate"
-        static let advancedTemperature = "advancedTemperature"
     }
 
     @Published var refreshRate: RefreshRate {
@@ -45,18 +44,10 @@ final class SettingsStore: ObservableObject {
         }
     }
 
-    @Published var advancedTemperature: Bool {
-        didSet {
-            UserDefaults.standard.set(advancedTemperature, forKey: Keys.advancedTemperature)
-        }
-    }
-
     init() {
         let defaults = UserDefaults.standard
 
         let savedRate = defaults.string(forKey: Keys.refreshRate) ?? ""
         self.refreshRate = RefreshRate(rawValue: savedRate) ?? .standard
-
-        self.advancedTemperature = defaults.object(forKey: Keys.advancedTemperature) as? Bool ?? false
     }
 }

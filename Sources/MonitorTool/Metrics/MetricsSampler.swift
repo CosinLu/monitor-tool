@@ -6,12 +6,14 @@ import Cocoa
 final class MetricsSampler: ObservableObject {
     @Published private(set) var latestSnapshot: SystemSnapshot?
     @Published private(set) var cpuHistory: [Double] = []
+    @Published private(set) var isAuthorizingTemperature = false
 
     private let settings: SettingsStore
     private let cpuMonitor = CPUMonitor()
     private let memoryMonitor = MemoryMonitor()
     private let batteryMonitor = BatteryMonitor()
     private let thermalMonitor = ThermalMonitor()
+    private let appResourceMonitor = AppResourceMonitor()
 
     private var timer: Timer?
     private var isPopoverVisible = false
@@ -43,6 +45,31 @@ final class MetricsSampler: ObservableObject {
         }
     }
 
+    func refreshTemperatureWithAuthorization() {
+        guard !isAuthorizingTemperature else { return }
+        isAuthorizingTemperature = true
+
+        let thermalMonitor = self.thermalMonitor
+        sampleQueue.async { [weak self] in
+            let thermal = thermalMonitor.sampleWithAuthorization()
+
+            Task { @MainActor [weak self] in
+                guard let self = self else { return }
+                if let snapshot = self.latestSnapshot {
+                    self.latestSnapshot = SystemSnapshot(
+                        cpu: snapshot.cpu,
+                        memory: snapshot.memory,
+                        battery: snapshot.battery,
+                        thermal: thermal,
+                        appResource: snapshot.appResource,
+                        sampledAt: Date()
+                    )
+                }
+                self.isAuthorizingTemperature = false
+            }
+        }
+    }
+
     private func setupNotifications() {
         NotificationCenter.default.addObserver(
             self,
@@ -64,14 +91,6 @@ final class MetricsSampler: ObservableObject {
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
                 self?.updateTimer()
-            }
-            .store(in: &cancellables)
-
-        settings.$advancedTemperature
-            .dropFirst()
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] _ in
-                self?.sample()
             }
             .store(in: &cancellables)
     }
@@ -108,24 +127,26 @@ final class MetricsSampler: ObservableObject {
     }
 
     private func sample() {
-        let advancedTemperature = settings.advancedTemperature
         let cpuMonitor = self.cpuMonitor
         let memoryMonitor = self.memoryMonitor
         let batteryMonitor = self.batteryMonitor
         let thermalMonitor = self.thermalMonitor
+        let appResourceMonitor = self.appResourceMonitor
         let capacity = historyCapacity
 
         sampleQueue.async { [weak self] in
             let cpu = cpuMonitor.sample()
             let memory = memoryMonitor.sample()
             let battery = batteryMonitor.sample()
-            let thermal = thermalMonitor.sample(advanced: advancedTemperature)
+            let thermal = thermalMonitor.sample()
+            let appResource = appResourceMonitor.sample()
 
             let snapshot = SystemSnapshot(
                 cpu: cpu,
                 memory: memory,
                 battery: battery,
                 thermal: thermal,
+                appResource: appResource,
                 sampledAt: Date()
             )
 

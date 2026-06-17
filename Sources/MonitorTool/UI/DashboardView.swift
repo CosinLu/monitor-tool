@@ -19,6 +19,7 @@ struct DashboardView: View {
 
                 cpuSection
                 memorySection
+                appResourceSection
                 batteryThermalSection
 
                 Spacer(minLength: 8)
@@ -95,6 +96,33 @@ struct DashboardView: View {
     }
 
     @ViewBuilder
+    private var appResourceSection: some View {
+        MetricSectionView(title: "本 App 占用", icon: "app.badge", color: .teal) {
+            VStack(alignment: .leading, spacing: 6) {
+                HStack {
+                    Text("CPU")
+                        .font(.system(size: 12))
+                        .foregroundColor(.secondary)
+                    Spacer()
+                    Text(appCPUText)
+                        .font(.system(size: 15, weight: .semibold, design: .rounded))
+                        .foregroundColor(appCPUColor)
+                }
+
+                HStack {
+                    Text("内存")
+                        .font(.system(size: 12))
+                        .foregroundColor(.secondary)
+                    Spacer()
+                    Text(appMemoryText)
+                        .font(.system(size: 15, weight: .semibold, design: .rounded))
+                        .foregroundColor(appMemoryColor)
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
     private var batteryThermalSection: some View {
         MetricSectionView(title: "电池与温度", icon: "bolt.fill", color: .green) {
             VStack(alignment: .leading, spacing: 6) {
@@ -161,28 +189,67 @@ struct DashboardView: View {
                     Text(thermalStateText)
                         .font(.system(size: 12, weight: .medium))
                         .foregroundColor(thermalColor)
+                    temperatureRefreshButton
                 }
 
-                HStack {
-                    Text("传感器温度")
-                        .font(.system(size: 12))
-                        .foregroundColor(.secondary)
-                    Spacer()
-                    Text(temperatureText)
-                        .font(.system(size: 16, weight: .semibold, design: .rounded))
-                        .foregroundColor(temperatureColor)
-                }
+                temperatureRows
 
                 HStack {
-                    Text("高级温度")
+                    Text("温度来源")
                         .font(.system(size: 11))
                         .foregroundColor(.secondary)
                     Spacer()
-                    Text(advancedTemperatureStatusText)
+                    Text(temperatureSourceText)
                         .font(.system(size: 11, weight: .medium))
-                        .foregroundColor(advancedTemperatureStatusColor)
+                        .foregroundColor(temperatureStatusColor)
                 }
+
             }
+        }
+    }
+
+    private var temperatureRefreshButton: some View {
+        Button {
+            sampler.refreshTemperatureWithAuthorization()
+        } label: {
+            Label(
+                sampler.isAuthorizingTemperature ? "读取中" : "授权刷新",
+                systemImage: sampler.isAuthorizingTemperature ? "hourglass" : "lock.open"
+            )
+            .font(.system(size: 10, weight: .medium))
+            .labelStyle(.titleAndIcon)
+            .padding(.horizontal, 7)
+            .padding(.vertical, 3)
+            .background(Color.secondary.opacity(0.10))
+            .overlay(
+                Capsule()
+                    .stroke(Color.secondary.opacity(0.25), lineWidth: 0.8)
+            )
+            .clipShape(Capsule())
+        }
+        .buttonStyle(.plain)
+        .foregroundColor(sampler.isAuthorizingTemperature ? .secondary : .blue)
+        .disabled(sampler.isAuthorizingTemperature)
+    }
+
+    @ViewBuilder
+    private var temperatureRows: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            temperatureMetricRow(title: "平均温度", value: averageTemperatureText, color: averageTemperatureColor)
+            temperatureMetricRow(title: "最高温度", value: maximumTemperatureText, color: maximumTemperatureColor)
+            temperatureMetricRow(title: "最低温度", value: minimumTemperatureText, color: minimumTemperatureColor)
+        }
+    }
+
+    private func temperatureMetricRow(title: String, value: String, color: Color) -> some View {
+        HStack {
+            Text(title)
+                .font(.system(size: 12))
+                .foregroundColor(.secondary)
+            Spacer()
+            Text(value)
+                .font(.system(size: 15, weight: .semibold, design: .rounded))
+                .foregroundColor(color)
         }
     }
 
@@ -279,6 +346,31 @@ struct DashboardView: View {
         }
     }
 
+    private var appCPUText: String {
+        guard let appResource = snapshot?.appResource else { return "--" }
+        return String(format: "%.2f%%", appResource.cpuUsagePercent)
+    }
+
+    private var appCPUColor: Color {
+        guard let cpu = snapshot?.appResource.cpuUsagePercent else { return .secondary }
+        if cpu >= 2 { return .red }
+        if cpu >= 1 { return .yellow }
+        return .green
+    }
+
+    private var appMemoryText: String {
+        guard let appResource = snapshot?.appResource else { return "--" }
+        return byteFormatter.string(fromByteCount: Int64(appResource.memoryBytes))
+    }
+
+    private var appMemoryColor: Color {
+        guard let bytes = snapshot?.appResource.memoryBytes else { return .secondary }
+        let megabytes = Double(bytes) / 1_048_576
+        if megabytes >= 80 { return .red }
+        if megabytes >= 50 { return .yellow }
+        return .green
+    }
+
     private func batteryIcon(_ battery: BatteryStatus) -> String {
         if battery.isCharging { return "bolt.batteryblock.fill" }
         let level = battery.percentage
@@ -349,37 +441,65 @@ struct DashboardView: View {
         }
     }
 
-    private var temperatureText: String {
-        guard let temp = snapshot?.thermal.sensorTemperatureCelsius else {
-            return "--°C"
-        }
-        return String(format: "%.0f°C", temp)
+    private var averageTemperatureText: String {
+        temperatureText(snapshot?.thermal.averageTemperatureCelsius)
     }
 
-    private var temperatureColor: Color {
-        switch snapshot?.thermal.sensorStatus {
-        case .available: return thermalColor
-        default: return .secondary
-        }
+    private var maximumTemperatureText: String {
+        temperatureText(snapshot?.thermal.maximumTemperatureCelsius)
     }
 
-    private var advancedTemperatureStatusText: String {
-        guard let thermal = snapshot?.thermal else { return "--" }
-        switch thermal.sensorStatus {
-        case .disabled:
-            return "未开启"
-        case .available:
-            return "读取成功" + (thermal.sensorSource.map { " · \($0)" } ?? "")
-        case .unavailable:
-            return "读取失败，已降级"
-        }
+    private var minimumTemperatureText: String {
+        temperatureText(snapshot?.thermal.minimumTemperatureCelsius)
     }
 
-    private var advancedTemperatureStatusColor: Color {
-        switch snapshot?.thermal.sensorStatus {
-        case .available: return .green
+    private var averageTemperatureColor: Color {
+        temperatureColor(snapshot?.thermal.averageTemperatureCelsius)
+    }
+
+    private var maximumTemperatureColor: Color {
+        temperatureColor(snapshot?.thermal.maximumTemperatureCelsius)
+    }
+
+    private var minimumTemperatureColor: Color {
+        temperatureColor(snapshot?.thermal.minimumTemperatureCelsius)
+    }
+
+    private func temperatureText(_ celsius: Double?) -> String {
+        guard let celsius else { return "--°C" }
+        return String(format: "%.0f°C", celsius)
+    }
+
+    private func temperatureColor(_ celsius: Double?) -> Color {
+        guard let celsius else { return .secondary }
+        if celsius >= 90 { return .red }
+        if celsius >= 75 { return .orange }
+        if celsius >= 60 { return .yellow }
+        return .green
+    }
+
+    private var temperatureStatusColor: Color {
+        switch snapshot?.thermal.temperatureStatus {
+        case .available: return .secondary
+        case .needsPermission: return .yellow
         case .unavailable: return .yellow
         default: return .secondary
+        }
+    }
+
+    private var temperatureSourceText: String {
+        guard let thermal = snapshot?.thermal else { return "--" }
+        switch thermal.temperatureStatus {
+        case .available:
+            let source = thermal.temperatureSource ?? "HID 传感器"
+            if thermal.temperatureSensorCount > 0 {
+                return "\(source) · \(thermal.temperatureSensorCount) 个"
+            }
+            return source
+        case .needsPermission:
+            return "需要权限或不可用，已降级"
+        case .unavailable:
+            return "不可用，已降级为热状态"
         }
     }
 

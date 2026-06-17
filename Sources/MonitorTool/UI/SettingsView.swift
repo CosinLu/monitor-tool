@@ -48,16 +48,6 @@ struct SettingsView: View {
                     Text("采样")
                         .font(.system(size: 11, weight: .medium))
                 }
-
-                Section {
-                    Toggle("高级温度模式", isOn: $settings.advancedTemperature)
-                    Text("开启后尝试读取 SMC 传感器，失败时自动降级为系统热状态。")
-                        .font(.system(size: 11))
-                        .foregroundColor(.secondary)
-                } header: {
-                    Text("温度")
-                        .font(.system(size: 11, weight: .medium))
-                }
             }
             .formStyle(.grouped)
 

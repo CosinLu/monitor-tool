@@ -31,10 +31,10 @@
 - 系统数据采集：
   - CPU：Mach API
   - 内存：Mach API + `sysctl`
-- 电池：IOKit Power Sources
-- 系统低电量模式：`ProcessInfo.processInfo.isLowPowerModeEnabled`
-- 系统热状态：`ProcessInfo.processInfo.thermalState`
-- 高级温度：SMC/底层传感器读取，作为可选增强
+  - 电池：IOKit Power Sources
+  - 系统低电量模式：`ProcessInfo.processInfo.isLowPowerModeEnabled`
+  - 系统热状态：`ProcessInfo.processInfo.thermalState`
+  - 实时温度：优先 Apple Silicon HID 温度传感器；HID 不可用时低频短采样尝试 `powermetrics`
 - 设置存储：`UserDefaults`
 
 ### 2.2 为什么不用 Electron
@@ -67,11 +67,13 @@ StatusBar/
 
 Metrics/
   MetricsSampler.swift
+  AppResourceMonitor.swift
   CPUMonitor.swift
   MemoryMonitor.swift
   BatteryMonitor.swift
   ThermalMonitor.swift
-  SMCMonitor.swift
+  HIDTemperatureMonitor.swift
+  PowermetricsTemperatureMonitor.swift
   SystemSnapshot.swift
 
 Settings/
@@ -231,6 +233,7 @@ struct SystemSnapshot {
     let memory: MemoryStatus
     let battery: BatteryStatus?
     let thermal: ThermalStatus
+    let appResource: AppResourceStatus
     let sampledAt: Date
 }
 ```
@@ -280,9 +283,13 @@ struct BatteryStatus {
 ```swift
 struct ThermalStatus {
     let state: ThermalState
-    let sensorTemperatureCelsius: Double?
-    let sensorSource: String?
-    let sensorStatus: ThermalSensorStatus
+    let averageTemperatureCelsius: Double?
+    let minimumTemperatureCelsius: Double?
+    let maximumTemperatureCelsius: Double?
+    let temperatureSource: String?
+    let temperatureSensorCount: Int
+    let temperatureStatus: TemperatureStatus
+    let temperatureSampledAt: Date?
 }
 
 enum ThermalState {
@@ -292,11 +299,20 @@ enum ThermalState {
     case critical
 }
 
-enum ThermalSensorStatus {
-    case disabled
+enum TemperatureStatus {
     case available
+    case needsPermission
     case unavailable
 }
+
+App 自身资源占用：
+
+```swift
+struct AppResourceStatus {
+    let cpuUsagePercent: Double
+    let memoryBytes: UInt64
+}
+```
 ```
 
 ## 6. 采样逻辑
@@ -308,11 +324,12 @@ enum ThermalSensorStatus {
 职责：
 
 - 持有 `CPUMonitor`、`MemoryMonitor`、`BatteryMonitor`、`ThermalMonitor`。
+- 持有 `AppResourceMonitor`，采样 MonitorTool 自身 CPU 与内存占用。
 - 定时采样并生成 `SystemSnapshot`。
 - 向 SwiftUI 发布最新状态。
 - 根据弹窗状态切换刷新频率。
 - 监听刷新频率设置变更，设置修改后立即重建 Timer。
-- 监听高级温度模式设置变更，开关变化后立即刷新一次。
+- 每次采样都尝试读取温度；弹窗打开时按高频实时更新，弹窗关闭时降频。
 
 推荐刷新频率：
 
@@ -386,7 +403,28 @@ available = free + inactive
 - 打开大型 App 后，已用内存应上升。
 - 关闭大型 App 后，可用内存应逐渐恢复。
 
-### 6.4 电池采样
+### 6.4 App 自身资源采样
+
+使用：
+
+- `getrusage(RUSAGE_SELF)` 获取当前进程 user/system CPU time。
+- `ProcessInfo.processInfo.systemUptime` 计算采样时间差。
+- `task_info(TASK_VM_INFO)` 获取当前进程 `phys_footprint`。
+
+计算：
+
+```text
+appCPUPercent = deltaProcessCPUTime / deltaWallClockTime * 100
+appMemory = task_vm_info.phys_footprint
+```
+
+验证方法：
+
+- 弹窗打开时，“本 App 占用”中 CPU 与内存有数值。
+- CPU 低负载时应接近 0。
+- 内存值应与活动监视器中 MonitorTool 的内存趋势接近。
+
+### 6.5 电池采样
 
 使用 IOKit Power Sources：
 
@@ -421,13 +459,12 @@ available = free + inactive
 - UI 中必须独立展示充电状态：充电中 / 已连接电源 / 使用电池。
 - 满电、低电量、低电量模式、充电中都应正常显示。
 
-### 6.5 温度/热状态
+### 6.6 温度/热状态
 
-默认模式：
+热状态：
 
 - 使用 `ProcessInfo.processInfo.thermalState`。
-- 显示系统热状态。
-- 默认模式不调用 SMC/底层传感器，具体温度显示为 `--°C`，高级温度状态显示“未开启”。
+- 始终显示系统热状态。
 
 映射关系：
 
@@ -438,23 +475,26 @@ available = free + inactive
 .critical -> 过热
 ```
 
-高级温度模式：
+实时温度：
 
-- 设置中提供开关。
-- 开启后尝试读取 SMC/底层传感器。
-- 只面向 Apple Silicon，不需要 Intel 兼容。
-- 读取成功时填充 `sensorTemperatureCelsius` 与 `sensorSource`，`sensorStatus` 为 `.available`。
-- 读取失败时温度返回 `nil`，`sensorStatus` 为 `.unavailable`，UI 显示“读取失败，已降级”。
-- 不请求管理员权限。
-- 不依赖后台命令行工具。
+- 默认随每次采样尝试读取 Apple Silicon HID 温度传感器。
+- HID 读取失败时，可低频尝试 `sudo -n /usr/bin/powermetrics --samplers thermal -n 1 -i 1000` 作为兜底。
+- `powermetrics` 兜底必须是短生命周期进程，不能常驻；当前建议至少 60 秒限流，并设置 4 秒以内超时。
+- UI 可在热状态行提供“授权刷新”按钮，手动触发 `osascript` 管理员授权弹窗，短时运行 `powermetrics`。
+- 读取成功时填充 `averageTemperatureCelsius`、`minimumTemperatureCelsius`、`maximumTemperatureCelsius`、`temperatureSource`、`temperatureSensorCount` 与 `temperatureSampledAt`，`temperatureStatus` 为 `.available`。
+- 需要权限或读取失败时温度返回 `nil`，UI 显示“需要权限或不可用，已降级”。
+- 不保存 sudo 密码。
+- 不保留 root 后台命令行工具。
 
-建议高级模式第一版只做“尽力读取”，不要把精确温度作为核心承诺。
+实时温度是 best-effort 本机读取：成功时展示摄氏温度，失败时必须安静降级，不影响热状态展示和 App 可用性。即使允许权限，也必须保持低内存设计，不能为了温度常驻高占用 helper 或长时间运行 `powermetrics`。
 
 验证方法：
 
-- 默认模式关闭高级读取时，不应调用 SMC。
-- 开启高级模式后，如读取成功，显示温度和来源。
-- 如读取失败，App 不崩溃，UI 正常显示热状态，并明确提示已降级。
+- 弹窗打开时温度按当前刷新频率更新。
+- 自动 `powermetrics` 兜底不应比限流间隔更频繁。
+- 点击热状态行的“授权刷新”按钮时可以弹出系统管理员授权窗口，并在采样后退出子进程。
+- 如读取成功，显示温度、来源和传感器数量。
+- 如需要权限或读取失败，App 不崩溃，UI 正常显示热状态，并明确提示已降级。
 
 ## 7. UI 设计说明
 
@@ -491,6 +531,10 @@ CPU
   压力状态
   进度条
 
+本 App 占用
+  CPU
+  内存
+
 电池与温度
   电量
   充电状态
@@ -498,8 +542,10 @@ CPU
   采样模式（省电 / 标准 / 实时）
   剩余时间
   热状态
-  传感器温度
-  高级温度状态（未开启 / 读取成功 / 读取失败，已降级）
+  平均温度
+  最高温度
+  最低温度
+  温度来源（读取成功 / 不可用，已降级为热状态）
 
 底部操作
   设置
@@ -541,7 +587,6 @@ NSApp.terminate(nil)
   - 省电：弹窗关闭 15 秒，打开 2 秒
   - 标准：弹窗关闭 8 秒，打开 1 秒
   - 实时：弹窗关闭 5 秒，打开 0.5 秒
-- 高级温度模式：开 / 关
 
 菜单栏显示模式不需要做，因为你的要求是菜单栏只显示图标。
 
@@ -558,11 +603,10 @@ UserDefaults.standard
 - 修改刷新频率后，当前采样 Timer 立即按新频率生效。
 - 修改设置后退出 App。
 - 重新打开 App，设置仍然保留。
-- 高级温度开关状态能持久化。
 
 ## 9. 权限与隐私
 
-第一版不应请求任何额外权限。
+默认模式不请求任何额外权限。
 
 不需要：
 
@@ -571,6 +615,12 @@ UserDefaults.standard
 - 网络权限
 - 定位权限
 - 通讯录权限
+
+可选权限：
+
+- 若用户明确允许，可通过系统配置让 `/usr/bin/powermetrics` 以 root 权限短时运行。
+- App 不保存 sudo 密码，不弹伪密码输入框，不保留 root helper。
+- `powermetrics` 只能作为低频、短生命周期兜底温度源。
 
 隐私原则：
 
@@ -680,22 +730,24 @@ UserDefaults.standard
 - 插拔电源后状态变化。
 - 无电池设备不崩溃。
 
-### 第五步：实现热状态与高级温度模式
+### 第五步：实现热状态与实时温度
 
 实现内容：
 
 - 新建 `ThermalMonitor`。
-- 默认读取 `ProcessInfo.thermalState`。
-- 新建 `SMCMonitor`，只在高级模式开启时调用。
-- SMC 读取成功时返回温度与来源。
-- SMC 读取失败时返回 `nil`，并将高级传感器状态标记为不可用。
-- UI 展示热状态、传感器温度和高级温度读取状态。
+- 始终读取 `ProcessInfo.thermalState`。
+- 新建 `HIDTemperatureMonitor`，默认随采样尝试读取 Apple Silicon HID 温度传感器。
+- 新建 `PowermetricsTemperatureMonitor`，仅在 HID 不可用时低频短采样尝试 `powermetrics` 兜底。
+- 温度读取成功时返回平均、最高、最低摄氏温度、来源和传感器数量。
+- 需要权限或温度读取失败时返回 `nil`，并将温度状态标记为需要权限或不可用。
+- UI 展示热状态、平均温度、最高温度、最低温度和温度来源/降级状态。
 
 验收：
 
-- 高级模式关闭时不读取 SMC。
-- 高级模式开启后读取成功时显示摄氏温度。
-- 高级模式开启后读取失败也不影响 App，并提示“读取失败，已降级”。
+- 弹窗打开时实时温度按当前刷新频率更新。
+- 温度读取成功时显示摄氏温度。
+- 需要权限或温度读取失败也不影响 App，并提示“需要权限或不可用，已降级”。
+- 不出现长期运行的 `powermetrics` 进程。
 - 热状态始终有可展示结果。
 
 ### 第六步：实现刷新频率切换
@@ -706,7 +758,6 @@ UserDefaults.standard
 - 弹窗打开时使用高频采样。
 - 弹窗关闭时使用低频采样。
 - 刷新频率设置变更后立即重建 Timer。
-- 高级温度模式设置变更后立即刷新一次。
 - 监听休眠和唤醒通知。
 - 休眠时暂停采样，唤醒后恢复。
 
@@ -724,8 +775,9 @@ UserDefaults.standard
 
 - 顶部增加整体状态摘要。
 - CPU、内存、电池温度分区展示。
+- 本 App 占用分区展示 MonitorTool 自身 CPU 与内存。
 - 电池区域展示电量、充电状态、系统电源模式和 App 采样模式。
-- 温度区域展示传感器温度和高级读取状态。
+- 温度区域展示热状态、平均温度、最高温度、最低温度和温度来源/降级状态。
 - 增加趋势线。
 - 增加最后刷新时间。
 - 增加设置入口。
@@ -744,14 +796,12 @@ UserDefaults.standard
 
 - 使用 `UserDefaults` 保存设置。
 - 支持刷新频率切换。
-- 支持高级温度模式开关。
 - 暂不提供开机启动入口。
 
 验收：
 
 - 设置修改后立即生效。
 - 退出重启后设置仍保留。
-- 高级模式开关能控制 SMC 读取。
 - 没有展示无法真实生效的开机启动开关。
 
 ## 12. 最终验收清单
@@ -761,12 +811,13 @@ UserDefaults.standard
 - App 无 Dock 图标，`.app` Bundle 有应用图标。
 - 菜单栏只显示图标，图标为 `waveform.path.ecg` 并保持恒定。
 - 点击图标展示详细状态，点击弹窗外区域自动关闭。
-- 弹窗内显示 CPU、内存、电池电量、充电状态、电源模式、采样模式、热状态和高级温度状态。
+- 弹窗内显示 CPU、内存、本 App CPU/内存占用、电池电量、充电状态、电源模式、采样模式、热状态、平均温度、最高温度、最低温度和温度来源。
 - 弹窗内有退出按钮。
 - 点击退出后 App 进程结束。
 - 无电池或温度读取失败时 App 不崩溃。
-- 高级温度读取成功时显示具体摄氏温度。
-- 高级温度读取失败时明确提示已降级。
+- 实时温度读取成功时显示平均、最高、最低摄氏温度。
+- 实时温度读取失败时明确提示已降级。
+- `powermetrics` 兜底不常驻，不导致长期内存升高。
 - 系统低电量模式开启时，App 内电池状态与系统状态一致。
 
 性能：
@@ -774,6 +825,7 @@ UserDefaults.standard
 - 弹窗关闭时 CPU 接近 0。
 - 弹窗打开时 CPU 不长期超过 2%。
 - 常驻内存尽量低于 50 MB。
+- 弹窗内“本 App 占用”应能帮助核对轻量目标。
 - 长时间运行无明显内存增长。
 
 体验：
@@ -798,7 +850,7 @@ UserDefaults.standard
 - 运行方式
 - macOS 版本
 - Xcode 版本
-- 是否启用了高级温度模式
+- 温度读取是否成功，以及显示的温度来源
 - 你本机观察到的 CPU/内存占用
 
 我会重点审查：
@@ -809,8 +861,8 @@ UserDefaults.standard
 - Timer 是否在弹窗关闭后降频。
 - 是否有循环引用。
 - 是否有主线程阻塞。
-- SMC 读取失败是否安全降级。
-- 高级温度模式是否明确提示成功或失败。
+- 温度读取失败是否安全降级。
+- 实时温度是否按当前采样频率更新。
 - 系统低电量模式和采样模式是否在 UI 中准确展示。
 - 点击弹窗外区域是否能稳定关闭弹窗。
 - 退出按钮是否能稳定结束进程。
