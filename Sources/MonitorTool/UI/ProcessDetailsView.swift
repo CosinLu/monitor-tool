@@ -41,13 +41,29 @@ struct ProcessDetailsView: View {
 
     private var header: some View {
         HStack {
-            VStack(alignment: .leading, spacing: 2) {
-                Text(title)
-                    .font(.system(size: 15, weight: .semibold))
-                Text("按需采样，关闭后不持续读取")
-                    .font(.system(size: 11))
-                    .foregroundColor(.secondary)
+            ZStack {
+                WindowDragHandle()
+                    .frame(height: 52)
+
+                HStack(spacing: 9) {
+                    Capsule()
+                        .fill(Color.secondary.opacity(0.32))
+                        .frame(width: 4, height: 24)
+
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(title)
+                            .font(.system(size: 15, weight: .semibold))
+                        Text("按需采样，关闭后不持续读取")
+                            .font(.system(size: 11))
+                            .foregroundColor(.secondary)
+                    }
+
+                    Spacer()
+                }
+                .allowsHitTesting(false)
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .frame(height: 52)
 
             Spacer()
 
@@ -73,7 +89,7 @@ struct ProcessDetailsView: View {
             .foregroundColor(.secondary)
         }
         .padding(.horizontal, 14)
-        .padding(.vertical, 12)
+        .padding(.vertical, 8)
         .background(.ultraThinMaterial)
     }
 

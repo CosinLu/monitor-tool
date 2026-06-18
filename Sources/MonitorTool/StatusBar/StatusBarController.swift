@@ -7,18 +7,20 @@ final class StatusBarController: NSObject, NSWindowDelegate {
     private var panel: NSPanel
     private let settingsStore: SettingsStore
     private let sampler: MetricsSampler
+    private let processDetailsPanel: ProcessDetailsPanelController
     private var clickMonitor: Any?
 
     override init() {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
         panel = NSPanel(
-            contentRect: NSRect(x: 0, y: 0, width: 340, height: 460),
+            contentRect: NSRect(x: 0, y: 0, width: 340, height: 480),
             styleMask: [.titled, .fullSizeContentView, .nonactivatingPanel],
             backing: .buffered,
             defer: false
         )
         settingsStore = SettingsStore()
         sampler = MetricsSampler(settings: settingsStore)
+        processDetailsPanel = ProcessDetailsPanelController(sampler: sampler)
 
         super.init()
 
@@ -45,19 +47,20 @@ final class StatusBarController: NSObject, NSWindowDelegate {
         panel.level = .statusBar
         panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
         panel.isReleasedWhenClosed = false
-        panel.isMovableByWindowBackground = true
+        panel.isMovableByWindowBackground = false
         panel.hidesOnDeactivate = false
         panel.titleVisibility = .hidden
         panel.titlebarAppearsTransparent = true
         panel.standardWindowButton(.closeButton)?.isHidden = true
         panel.standardWindowButton(.miniaturizeButton)?.isHidden = true
         panel.standardWindowButton(.zoomButton)?.isHidden = true
-        panel.backgroundColor = .clear
-        panel.isOpaque = false
+        panel.backgroundColor = .windowBackgroundColor
+        panel.isOpaque = true
 
         let rootView = PopoverRootView()
             .environmentObject(sampler)
             .environmentObject(settingsStore)
+            .environmentObject(processDetailsPanel)
 
         panel.contentViewController = NSHostingController(rootView: rootView)
     }
@@ -111,6 +114,10 @@ final class StatusBarController: NSObject, NSWindowDelegate {
             }
 
             if self.panel.frame.contains(NSEvent.mouseLocation) {
+                return
+            }
+
+            if self.processDetailsPanel.contains(NSEvent.mouseLocation) {
                 return
             }
 

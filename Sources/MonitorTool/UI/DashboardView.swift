@@ -3,8 +3,8 @@ import SwiftUI
 struct DashboardView: View {
     @EnvironmentObject var sampler: MetricsSampler
     @EnvironmentObject var settings: SettingsStore
+    @EnvironmentObject var processDetailsPanel: ProcessDetailsPanelController
     @Binding var showingSettings: Bool
-    @State private var showingProcessDetails = false
 
     private let byteFormatter: ByteCountFormatter = {
         let formatter = ByteCountFormatter()
@@ -14,37 +14,23 @@ struct DashboardView: View {
     }()
 
     var body: some View {
-        ZStack {
-            ScrollView {
-                VStack(spacing: 12) {
-                    statusSummary
+        ScrollView {
+            VStack(spacing: 12) {
+                statusSummary
 
-                    cpuSection
-                    memorySection
-                    appResourceSection
-                    batteryThermalSection
+                cpuSection
+                memorySection
+                appResourceSection
+                batteryThermalSection
 
-                    Spacer(minLength: 8)
-                }
-                .padding(.horizontal, 12)
-                .padding(.top, 12)
+                Spacer(minLength: 8)
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .safeAreaInset(edge: .bottom) {
-                bottomBar
-            }
-
-            if showingProcessDetails {
-                Color.black.opacity(0.18)
-                    .ignoresSafeArea()
-
-                ProcessDetailsView {
-                    showingProcessDetails = false
-                }
-                .environmentObject(sampler)
-                .padding(10)
-                .transition(.scale(scale: 0.98).combined(with: .opacity))
-            }
+            .padding(.horizontal, 12)
+            .padding(.top, 12)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .safeAreaInset(edge: .bottom) {
+            bottomBar
         }
     }
 
@@ -74,8 +60,7 @@ struct DashboardView: View {
                         .font(.system(size: 11))
                         .foregroundColor(.secondary)
                     detailButton(title: "查看详情") {
-                        sampler.loadProcessDetails(sortMode: .cpu)
-                        showingProcessDetails = true
+                        processDetailsPanel.show(sortMode: .cpu)
                     }
                 }
 
@@ -97,8 +82,7 @@ struct DashboardView: View {
                         .font(.system(size: 11, weight: .medium))
                         .foregroundColor(memoryPressureColor)
                     detailButton(title: "查看详情") {
-                        sampler.loadProcessDetails(sortMode: .memory)
-                        showingProcessDetails = true
+                        processDetailsPanel.show(sortMode: .memory)
                     }
                 }
 

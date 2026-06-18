@@ -17,7 +17,10 @@ final class ProcessMonitor: @unchecked Sendable {
     func sample(sortMode: ProcessSortMode, limit: Int = 12) -> [ProcessStatus] {
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/bin/ps")
-        process.arguments = ["-axo", "pid=,pcpu=,rss=,comm="]
+        process.arguments = [
+            sortMode == .cpu ? "-arcxo" : "-amxo",
+            "pid=,pcpu=,rss=,comm="
+        ]
 
         let pipe = Pipe()
         process.standardOutput = pipe
@@ -29,25 +32,18 @@ final class ProcessMonitor: @unchecked Sendable {
             return []
         }
 
-        process.waitUntilExit()
-        guard process.terminationStatus == 0 else { return [] }
-
         let data = pipe.fileHandleForReading.readDataToEndOfFile()
+        process.waitUntilExit()
+
+        guard process.terminationStatus == 0 else { return [] }
         guard let output = String(data: data, encoding: .utf8) else { return [] }
 
-        let statuses = output
+        return output
             .split(separator: "\n")
+            .lazy
             .compactMap(parseLine)
-
-        let sorted: [ProcessStatus]
-        switch sortMode {
-        case .cpu:
-            sorted = statuses.sorted { $0.cpuPercent > $1.cpuPercent }
-        case .memory:
-            sorted = statuses.sorted { $0.memoryBytes > $1.memoryBytes }
-        }
-
-        return Array(sorted.prefix(limit))
+            .prefix(limit)
+            .map { $0 }
     }
 
     private func parseLine(_ line: Substring) -> ProcessStatus? {

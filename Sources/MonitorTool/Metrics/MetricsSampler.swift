@@ -25,6 +25,7 @@ final class MetricsSampler: ObservableObject {
     private var cancellables = Set<AnyCancellable>()
 
     private let sampleQueue = DispatchQueue(label: "com.example.MonitorTool.sample", qos: .utility)
+    private let processQueue = DispatchQueue(label: "com.example.MonitorTool.process-details", qos: .userInitiated)
     private let historyCapacity = 60
 
     init(settings: SettingsStore) {
@@ -80,7 +81,7 @@ final class MetricsSampler: ObservableObject {
         processDetailMode = sortMode
 
         let processMonitor = self.processMonitor
-        sampleQueue.async { [weak self] in
+        processQueue.async { [weak self] in
             let details = processMonitor.sample(sortMode: sortMode)
 
             Task { @MainActor [weak self] in
