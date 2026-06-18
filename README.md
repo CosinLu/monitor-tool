@@ -1,6 +1,6 @@
 # MonitorTool
 
-一个面向 Apple Silicon Mac 的超轻量菜单栏系统监控工具，按照 `mac-system-monitor-development-spec.md` 开发。
+一个面向 Apple Silicon Mac 的超轻量菜单栏系统监控工具。
 
 ## 功能
 
