@@ -7,6 +7,9 @@ final class MetricsSampler: ObservableObject {
     @Published private(set) var latestSnapshot: SystemSnapshot?
     @Published private(set) var cpuHistory: [Double] = []
     @Published private(set) var isAuthorizingTemperature = false
+    @Published private(set) var processDetails: [ProcessStatus] = []
+    @Published private(set) var isLoadingProcessDetails = false
+    @Published private(set) var processDetailMode: ProcessSortMode?
 
     private let settings: SettingsStore
     private let cpuMonitor = CPUMonitor()
@@ -14,6 +17,7 @@ final class MetricsSampler: ObservableObject {
     private let batteryMonitor = BatteryMonitor()
     private let thermalMonitor = ThermalMonitor()
     private let appResourceMonitor = AppResourceMonitor()
+    private let processMonitor = ProcessMonitor()
 
     private var timer: Timer?
     private var isPopoverVisible = false
@@ -68,6 +72,28 @@ final class MetricsSampler: ObservableObject {
                 self.isAuthorizingTemperature = false
             }
         }
+    }
+
+    func loadProcessDetails(sortMode: ProcessSortMode) {
+        guard !isLoadingProcessDetails else { return }
+        isLoadingProcessDetails = true
+        processDetailMode = sortMode
+
+        let processMonitor = self.processMonitor
+        sampleQueue.async { [weak self] in
+            let details = processMonitor.sample(sortMode: sortMode)
+
+            Task { @MainActor [weak self] in
+                self?.processDetails = details
+                self?.isLoadingProcessDetails = false
+            }
+        }
+    }
+
+    func clearProcessDetails() {
+        processDetails = []
+        processDetailMode = nil
+        isLoadingProcessDetails = false
     }
 
     private func setupNotifications() {

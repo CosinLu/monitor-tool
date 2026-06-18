@@ -8,6 +8,7 @@
 - 点击图标展示系统状态弹窗，点击弹窗外区域自动关闭弹窗。
 - CPU 使用率与最近 60 秒趋势。
 - 内存已用 / 总量 / 可用 / 压力状态。
+- CPU / 内存区域可按需查看进程占用详情。
 - 本 App 当前 CPU 使用率与内存占用。
 - 电池电量、充电状态、剩余时间、系统低电量模式。
 - 系统热状态与实时温度，优先读取 Apple Silicon HID 传感器。
@@ -51,6 +52,7 @@ Sources/MonitorTool/
 │   ├── AppResourceMonitor.swift
 │   ├── CPUMonitor.swift
 │   ├── MemoryMonitor.swift
+│   ├── ProcessMonitor.swift
 │   ├── BatteryMonitor.swift
 │   ├── ThermalMonitor.swift
 │   ├── HIDTemperatureMonitor.swift
@@ -62,6 +64,7 @@ Sources/MonitorTool/
     ├── PopoverRootView.swift
     ├── DashboardView.swift
     ├── MetricSectionView.swift
+    ├── ProcessDetailsView.swift
     ├── TrendLineView.swift
     └── SettingsView.swift
 
@@ -115,6 +118,15 @@ App 默认会随每次采样尝试读取 Apple Silicon HID 温度传感器，不
 - CPU 使用率通过当前进程 user/system CPU time 的采样差值计算。
 - 内存使用 Mach `task_vm_info.phys_footprint`，更接近当前进程实际内存足迹。
 - 该采样在进程内完成，不额外启动命令行工具。
+
+## 进程详情
+
+CPU 和内存区域提供“查看详情”按钮，用于按需查看当前进程占用：
+
+- CPU 详情按 CPU 使用率排序。
+- 内存详情按内存占用排序。
+- 进程列表通过一次性 `ps` 采样生成，关闭详情窗口后不持续读取。
+- 只展示占用信息，不提供杀进程、清理或卸载功能。
 
 ## 隐私
 

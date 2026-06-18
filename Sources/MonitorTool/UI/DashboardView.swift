@@ -4,6 +4,7 @@ struct DashboardView: View {
     @EnvironmentObject var sampler: MetricsSampler
     @EnvironmentObject var settings: SettingsStore
     @Binding var showingSettings: Bool
+    @State private var showingProcessDetails = false
 
     private let byteFormatter: ByteCountFormatter = {
         let formatter = ByteCountFormatter()
@@ -30,6 +31,10 @@ struct DashboardView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .safeAreaInset(edge: .bottom) {
             bottomBar
+        }
+        .sheet(isPresented: $showingProcessDetails) {
+            ProcessDetailsView()
+                .environmentObject(sampler)
         }
     }
 
@@ -58,6 +63,10 @@ struct DashboardView: View {
                     Text("用户 \(userPercentText) · 系统 \(systemPercentText)")
                         .font(.system(size: 11))
                         .foregroundColor(.secondary)
+                    detailButton(title: "查看详情") {
+                        sampler.loadProcessDetails(sortMode: .cpu)
+                        showingProcessDetails = true
+                    }
                 }
 
                 TrendLineView(values: sampler.cpuHistory, color: cpuTrendColor)
@@ -77,6 +86,10 @@ struct DashboardView: View {
                     Text(memoryPressureText)
                         .font(.system(size: 11, weight: .medium))
                         .foregroundColor(memoryPressureColor)
+                    detailButton(title: "查看详情") {
+                        sampler.loadProcessDetails(sortMode: .memory)
+                        showingProcessDetails = true
+                    }
                 }
 
                 ProgressView(value: memoryUsedPercent)
@@ -93,6 +106,24 @@ struct DashboardView: View {
                 }
             }
         }
+    }
+
+    private func detailButton(title: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Label(title, systemImage: "list.bullet")
+                .font(.system(size: 10, weight: .medium))
+                .labelStyle(.titleAndIcon)
+                .padding(.horizontal, 7)
+                .padding(.vertical, 3)
+                .background(Color.secondary.opacity(0.10))
+                .overlay(
+                    Capsule()
+                        .stroke(Color.secondary.opacity(0.25), lineWidth: 0.8)
+                )
+                .clipShape(Capsule())
+        }
+        .buttonStyle(.plain)
+        .foregroundColor(.blue)
     }
 
     @ViewBuilder
