@@ -13,8 +13,8 @@ final class StatusBarController: NSObject, NSWindowDelegate {
     override init() {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
         panel = NSPanel(
-            contentRect: NSRect(x: 0, y: 0, width: 340, height: 466),
-            styleMask: [.titled, .fullSizeContentView, .nonactivatingPanel],
+            contentRect: NSRect(x: 0, y: 0, width: 340, height: 460),
+            styleMask: [.borderless, .nonactivatingPanel],
             backing: .buffered,
             defer: false
         )
@@ -49,11 +49,6 @@ final class StatusBarController: NSObject, NSWindowDelegate {
         panel.isReleasedWhenClosed = false
         panel.isMovableByWindowBackground = false
         panel.hidesOnDeactivate = false
-        panel.titleVisibility = .hidden
-        panel.titlebarAppearsTransparent = true
-        panel.standardWindowButton(.closeButton)?.isHidden = true
-        panel.standardWindowButton(.miniaturizeButton)?.isHidden = true
-        panel.standardWindowButton(.zoomButton)?.isHidden = true
         panel.backgroundColor = .windowBackgroundColor
         panel.isOpaque = true
 

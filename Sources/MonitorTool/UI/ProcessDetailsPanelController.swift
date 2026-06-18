@@ -36,7 +36,7 @@ final class ProcessDetailsPanelController: ObservableObject {
 
         let panel = NSPanel(
             contentRect: NSRect(x: 0, y: 0, width: 330, height: 420),
-            styleMask: [.titled, .fullSizeContentView, .nonactivatingPanel],
+            styleMask: [.borderless, .nonactivatingPanel],
             backing: .buffered,
             defer: false
         )
@@ -45,11 +45,6 @@ final class ProcessDetailsPanelController: ObservableObject {
         panel.isReleasedWhenClosed = false
         panel.isMovableByWindowBackground = false
         panel.hidesOnDeactivate = false
-        panel.titleVisibility = .hidden
-        panel.titlebarAppearsTransparent = true
-        panel.standardWindowButton(.closeButton)?.isHidden = true
-        panel.standardWindowButton(.miniaturizeButton)?.isHidden = true
-        panel.standardWindowButton(.zoomButton)?.isHidden = true
         panel.backgroundColor = .windowBackgroundColor
         panel.isOpaque = true
 

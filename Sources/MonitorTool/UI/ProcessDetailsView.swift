@@ -43,18 +43,18 @@ struct ProcessDetailsView: View {
         HStack {
             ZStack {
                 WindowDragHandle()
-                    .frame(height: 52)
+                    .frame(height: 38)
 
                 HStack(spacing: 9) {
                     Capsule()
                         .fill(Color.secondary.opacity(0.32))
-                        .frame(width: 4, height: 24)
+                        .frame(width: 4, height: 20)
 
                     VStack(alignment: .leading, spacing: 2) {
                         Text(title)
                             .font(.system(size: 15, weight: .semibold))
                         Text("按需采样，关闭后不持续读取")
-                            .font(.system(size: 11))
+                            .font(.system(size: 10))
                             .foregroundColor(.secondary)
                     }
 
@@ -63,7 +63,7 @@ struct ProcessDetailsView: View {
                 .allowsHitTesting(false)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            .frame(height: 52)
+            .frame(height: 38)
 
             Spacer()
 
@@ -89,7 +89,7 @@ struct ProcessDetailsView: View {
             .foregroundColor(.secondary)
         }
         .padding(.horizontal, 14)
-        .padding(.vertical, 8)
+        .padding(.vertical, 6)
         .background(.ultraThinMaterial)
     }
 
