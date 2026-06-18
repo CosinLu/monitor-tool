@@ -19,7 +19,7 @@
 ## 技术栈
 
 - 语言：Swift 6.3
-- UI：SwiftUI + AppKit `NSStatusItem` / `NSPopover`
+- UI：SwiftUI + AppKit `NSStatusItem` / `NSPanel`
 - 系统数据：Mach API、IOKit、`ProcessInfo`
 - 构建：Swift Package Manager
 - 最低系统：macOS 13
@@ -85,7 +85,8 @@ Other files:
 ## 弹窗交互
 
 - 点击菜单栏图标：打开或关闭弹窗。
-- 点击弹窗外区域：自动关闭弹窗（通过 `NSPopover` `.transient` 行为 + 全局鼠标事件监听双重保证）。
+- 弹窗使用轻量浮动面板，可拖动调整位置。
+- 点击弹窗外区域：自动关闭弹窗。
 - 弹窗打开时采样频率提高，关闭时降低。
 
 ## 实时温度

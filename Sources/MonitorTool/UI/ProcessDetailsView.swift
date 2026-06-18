@@ -2,7 +2,7 @@ import SwiftUI
 
 struct ProcessDetailsView: View {
     @EnvironmentObject var sampler: MetricsSampler
-    @Environment(\.dismiss) private var dismiss
+    let onClose: () -> Void
 
     private let byteFormatter: ByteCountFormatter = {
         let formatter = ByteCountFormatter()
@@ -27,7 +27,13 @@ struct ProcessDetailsView: View {
                 processList
             }
         }
-        .frame(width: 520, height: 420)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(.regularMaterial)
+        .cornerRadius(8)
+        .overlay(
+            RoundedRectangle(cornerRadius: 8)
+                .stroke(Color.secondary.opacity(0.18), lineWidth: 1)
+        )
         .onDisappear {
             sampler.clearProcessDetails()
         }
@@ -58,7 +64,7 @@ struct ProcessDetailsView: View {
             .disabled(sampler.isLoadingProcessDetails)
 
             Button {
-                dismiss()
+                onClose()
             } label: {
                 Image(systemName: "xmark")
                     .font(.system(size: 13, weight: .semibold))
@@ -77,11 +83,11 @@ struct ProcessDetailsView: View {
                 Text("进程")
                     .frame(maxWidth: .infinity, alignment: .leading)
                 Text("PID")
-                    .frame(width: 58, alignment: .trailing)
+                    .frame(width: 46, alignment: .trailing)
                 Text("CPU")
-                    .frame(width: 64, alignment: .trailing)
+                    .frame(width: 52, alignment: .trailing)
                 Text("内存")
-                    .frame(width: 86, alignment: .trailing)
+                    .frame(width: 72, alignment: .trailing)
             }
             .font(.system(size: 11, weight: .medium))
             .foregroundColor(.secondary)
@@ -113,15 +119,15 @@ struct ProcessDetailsView: View {
             Text("\(process.pid)")
                 .font(.system(size: 11, design: .monospaced))
                 .foregroundColor(.secondary)
-                .frame(width: 58, alignment: .trailing)
+                .frame(width: 46, alignment: .trailing)
 
             Text(String(format: "%.1f%%", process.cpuPercent))
                 .font(.system(size: 11, design: .monospaced))
-                .frame(width: 64, alignment: .trailing)
+                .frame(width: 52, alignment: .trailing)
 
             Text(byteFormatter.string(fromByteCount: Int64(process.memoryBytes)))
                 .font(.system(size: 11, design: .monospaced))
-                .frame(width: 86, alignment: .trailing)
+                .frame(width: 72, alignment: .trailing)
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 8)

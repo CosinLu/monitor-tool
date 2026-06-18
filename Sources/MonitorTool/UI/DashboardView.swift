@@ -14,27 +14,37 @@ struct DashboardView: View {
     }()
 
     var body: some View {
-        ScrollView {
-            VStack(spacing: 12) {
-                statusSummary
+        ZStack {
+            ScrollView {
+                VStack(spacing: 12) {
+                    statusSummary
 
-                cpuSection
-                memorySection
-                appResourceSection
-                batteryThermalSection
+                    cpuSection
+                    memorySection
+                    appResourceSection
+                    batteryThermalSection
 
-                Spacer(minLength: 8)
+                    Spacer(minLength: 8)
+                }
+                .padding(.horizontal, 12)
+                .padding(.top, 12)
             }
-            .padding(.horizontal, 12)
-            .padding(.top, 12)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .safeAreaInset(edge: .bottom) {
-            bottomBar
-        }
-        .sheet(isPresented: $showingProcessDetails) {
-            ProcessDetailsView()
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .safeAreaInset(edge: .bottom) {
+                bottomBar
+            }
+
+            if showingProcessDetails {
+                Color.black.opacity(0.18)
+                    .ignoresSafeArea()
+
+                ProcessDetailsView {
+                    showingProcessDetails = false
+                }
                 .environmentObject(sampler)
+                .padding(10)
+                .transition(.scale(scale: 0.98).combined(with: .opacity))
+            }
         }
     }
 
