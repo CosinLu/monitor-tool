@@ -29,9 +29,9 @@ struct ProcessDetailsView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(.regularMaterial)
-        .cornerRadius(8)
+        .clipShape(RoundedRectangle(cornerRadius: 10))
         .overlay(
-            RoundedRectangle(cornerRadius: 8)
+            RoundedRectangle(cornerRadius: 10)
                 .stroke(Color.secondary.opacity(0.18), lineWidth: 1)
         )
         .onDisappear {

@@ -49,8 +49,9 @@ final class StatusBarController: NSObject, NSWindowDelegate {
         panel.isReleasedWhenClosed = false
         panel.isMovableByWindowBackground = false
         panel.hidesOnDeactivate = false
-        panel.backgroundColor = .windowBackgroundColor
-        panel.isOpaque = true
+        panel.backgroundColor = .clear
+        panel.isOpaque = false
+        panel.hasShadow = true
 
         let rootView = PopoverRootView()
             .environmentObject(sampler)

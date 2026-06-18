@@ -45,8 +45,9 @@ final class ProcessDetailsPanelController: ObservableObject {
         panel.isReleasedWhenClosed = false
         panel.isMovableByWindowBackground = false
         panel.hidesOnDeactivate = false
-        panel.backgroundColor = .windowBackgroundColor
-        panel.isOpaque = true
+        panel.backgroundColor = .clear
+        panel.isOpaque = false
+        panel.hasShadow = true
 
         let rootView = ProcessDetailsView { [weak self] in
             self?.close()
