@@ -5,6 +5,7 @@ struct DashboardView: View {
     @EnvironmentObject var settings: SettingsStore
     @EnvironmentObject var processDetailsPanel: ProcessDetailsPanelController
     @Binding var showingSettings: Bool
+    @State private var showingDonation = false
 
     private let byteFormatter: ByteCountFormatter = {
         let formatter = ByteCountFormatter()
@@ -32,6 +33,9 @@ struct DashboardView: View {
         .safeAreaInset(edge: .bottom) {
             bottomBar
         }
+        .sheet(isPresented: $showingDonation) {
+            DonationView()
+        }
     }
 
     @ViewBuilder
@@ -42,6 +46,23 @@ struct DashboardView: View {
             Text(overallText)
                 .font(.system(size: 13, weight: .medium))
             Spacer()
+            Button {
+                showingDonation = true
+            } label: {
+                Label("打赏作者", systemImage: "heart.fill")
+                    .font(.system(size: 10, weight: .medium))
+                    .labelStyle(.titleAndIcon)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(Color.secondary.opacity(0.10))
+                    .overlay(
+                        Capsule()
+                            .stroke(Color.secondary.opacity(0.22), lineWidth: 0.8)
+                    )
+                    .clipShape(Capsule())
+            }
+            .buttonStyle(.plain)
+            .foregroundColor(.pink)
         }
         .padding(10)
         .background(overallColor.opacity(0.12))

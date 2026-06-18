@@ -10,6 +10,9 @@ let package = Package(
         .executableTarget(
             name: "MonitorTool",
             path: "Sources/MonitorTool",
+            resources: [
+                .process("Resources")
+            ],
             linkerSettings: [
                 .linkedFramework("IOKit")
             ]

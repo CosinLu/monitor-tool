@@ -16,7 +16,7 @@ struct PopoverRootView: View {
             }
             .frame(width: 340, height: 460)
         }
-        .frame(width: 340, height: 480)
+        .frame(width: 340, height: 466)
         .background(.regularMaterial)
         .clipShape(RoundedRectangle(cornerRadius: 10))
         .overlay(
@@ -26,14 +26,8 @@ struct PopoverRootView: View {
     }
 
     private var dragHandle: some View {
-        ZStack {
-            WindowDragHandle()
-
-            Capsule()
-                .fill(.secondary.opacity(0.32))
-                .frame(width: 44, height: 4)
-        }
-        .frame(width: 340, height: 20)
+        WindowDragHandle()
+            .frame(width: 340, height: 6)
         .background(.regularMaterial)
     }
 }

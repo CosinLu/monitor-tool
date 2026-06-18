@@ -2,6 +2,12 @@
 
 一个面向 Apple Silicon Mac 的超轻量菜单栏系统监控工具。
 
+## 效果预览
+
+![MonitorTool CPU、内存与 App 占用预览](docs/images/monitor-overview.png)
+
+![MonitorTool 电池与温度预览](docs/images/monitor-battery-temperature.png)
+
 ## 功能
 
 - 菜单栏常驻图标（无 Dock 图标），使用 `waveform.path.ecg`。
@@ -58,17 +64,23 @@ Sources/MonitorTool/
 │   ├── HIDTemperatureMonitor.swift
 │   ├── PowermetricsTemperatureMonitor.swift
 │   └── SystemSnapshot.swift
+├── Resources/
+│   └── donation-wechat.png
 ├── Settings/
 │   └── SettingsStore.swift
 └── UI/
     ├── PopoverRootView.swift
     ├── DashboardView.swift
+    ├── DonationView.swift
     ├── MetricSectionView.swift
+    ├── ProcessDetailsPanelController.swift
     ├── ProcessDetailsView.swift
     ├── TrendLineView.swift
+    ├── WindowDragHandle.swift
     └── SettingsView.swift
 
 Other files:
+├── docs/images/
 ├── Package.swift
 ├── Info.plist
 ├── build.sh
