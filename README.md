@@ -70,16 +70,8 @@ Other files:
 ├── Info.plist
 ├── build.sh
 ├── generate-icon.swift
-├── AppIcon.icns
-└── README.md
+└── AppIcon.icns
 ```
-
-## 开发环境
-
-- macOS 版本：26.4 (25E246)
-- Swift 版本：Apple Swift version 6.3.2 (swiftlang-6.3.2.1.108 clang-2100.1.1.101)
-- 架构：arm64-apple-macosx26.0
-- 构建工具：Swift Package Manager（无 Xcode/xcodebuild）
 
 ## 菜单栏图标
 
