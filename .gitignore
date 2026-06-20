@@ -6,3 +6,10 @@ build/
 DerivedData/
 .swiftpm/
 mac-system-monitor-development-spec.md
+.claude
+.agents/
+.codex/
+AGENTS.md
+agents.md
+CLAUDE.md
+claude.md
