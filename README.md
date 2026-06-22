@@ -8,6 +8,16 @@
 
 ![MonitorTool 电池与温度预览](docs/images/monitor-battery-temperature.png)
 
+## 下载安装
+
+前往 [Releases](https://github.com/CosinLu/monitor-tool/releases) 下载最新版。
+
+当前版本：
+
+- [MonitorTool.app.zip v1.0.0](https://github.com/CosinLu/monitor-tool/releases/download/v1.0.0/MonitorTool.app.zip)
+
+下载后解压，双击 `MonitorTool.app` 运行，菜单栏会显示监控图标。
+
 ## 功能
 
 - 菜单栏常驻图标（无 Dock 图标），使用 `waveform.path.ecg`。
@@ -30,7 +40,7 @@
 - 构建：Swift Package Manager
 - 最低系统：macOS 13
 
-## 构建与运行
+## 从源码构建
 
 当前环境没有 `xcodebuild`，因此使用 Swift Package Manager 构建，并手动打包为标准 `.app` Bundle。
 
