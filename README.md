@@ -54,50 +54,6 @@ open build/MonitorTool.app
 
 > 注意：直接运行 `.build/debug/MonitorTool` 或 `.build/release/MonitorTool` 原始可执行文件会出现 Dock 图标，因为 `LSUIElement` 与 `CFBundleIconFile` 仅包含在 `MonitorTool.app/Contents/Info.plist` 中。App 图标为监控样式（`waveform.path.ecg`），打包时通过 `generate-icon.swift` 生成 `AppIcon.icns`。
 
-## 项目结构
-
-```
-Sources/MonitorTool/
-├── App/
-│   ├── MonitorApp.swift
-│   └── AppDelegate.swift
-├── StatusBar/
-│   └── StatusBarController.swift
-├── Metrics/
-│   ├── MetricsSampler.swift
-│   ├── AppResourceMonitor.swift
-│   ├── CPUMonitor.swift
-│   ├── MemoryMonitor.swift
-│   ├── ProcessMonitor.swift
-│   ├── BatteryMonitor.swift
-│   ├── ThermalMonitor.swift
-│   ├── HIDTemperatureMonitor.swift
-│   ├── PowermetricsTemperatureMonitor.swift
-│   └── SystemSnapshot.swift
-├── Resources/
-│   └── donation-wechat.png
-├── Settings/
-│   └── SettingsStore.swift
-└── UI/
-    ├── PopoverRootView.swift
-    ├── DashboardView.swift
-    ├── DonationView.swift
-    ├── MetricSectionView.swift
-    ├── ProcessDetailsPanelController.swift
-    ├── ProcessDetailsView.swift
-    ├── TrendLineView.swift
-    ├── WindowDragHandle.swift
-    └── SettingsView.swift
-
-Other files:
-├── docs/images/
-├── Package.swift
-├── Info.plist
-├── build.sh
-├── generate-icon.swift
-└── AppIcon.icns
-```
-
 ## 菜单栏图标
 
 - 使用 `NSStatusItem.squareLength`，只显示图标，不显示文字。
